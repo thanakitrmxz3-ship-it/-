@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HEE Audio BPM & Converter iKuy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 max-w-md mx-auto">
+
+    <!-- Header -->
+    <header class="text-center py-4">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">HEE Audio BPM & Converter iKuy</h1>
+        <p class="text-xs text-slate-400 mt-1">ปรับความเร็ว BPM และระบบบันทึกไฟล์เสียงขั้นสูง</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="space-y-4 my-auto">
+        <!-- File Upload Section -->
+        <div class="bg-slate-800/60 border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center relative">
+            <input type="file" id="audioFile" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <div id="uploadPrompt" class="space-y-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <p class="text-sm font-medium" id="fileNameText">แตะเพื่อเลือกไฟล์เพลง (MP3 / WAV / Audio)</p>
+                <p class="text-xs text-slate-500">รองรับไฟล์เสียงทุกประเภท</p>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div id="controls" class="bg-slate-800 rounded-2xl p-5 space-y-4 opacity-50 pointer-events-none transition-opacity">
+            <!-- Playback Preview -->
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-300">ตัวอย่างเสียง</span>
+                <button id="playBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition active:scale-95 shadow-lg shadow-blue-600/30">
+                    ▶ เล่น / พัก
+                </button>
+            </div>
+
+            <hr class="border-slate-700">
+
+            <!-- BPM Adjustment Section (50 - 300 BPM) -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <label for="bpmInput" class="text-sm font-medium text-slate-300">ปรับความเร็ว (BPM)</label>
+                    <div class="flex items-center space-x-1">
+                        <input type="number" id="bpmInput" min="50" max="300" value="120" class="w-20 bg-slate-700 text-blue-400 font-bold text-center text-sm py-1 px-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500">
+                        <span class="text-xs text-slate-400 font-medium">BPM</span>
+                    </div>
+                </div>
+
+                <!-- BPM Slider -->
+                <input type="range" id="bpmRange" min="50" max="300" step="1" value="120" class="w-full accent-blue-500 bg-slate-700 rounded-lg appearance-none h-2 cursor-pointer">
+                
+                <div class="flex justify-between text-xs text-slate-500">
+                    <span>50 BPM</span>
+                    <span>120 BPM</span>
+                    <span>300 BPM</span>
+                </div>
+
+                <!-- Base BPM Reference -->
+                <div class="flex justify-between items-center pt-1 text-xs text-slate-400 bg-slate-900/40 p-2 rounded-xl">
+                    <span>ความเร็วต้นฉบับ (Base BPM):</span>
+                    <input type="number" id="baseBpmInput" min="50" max="300" value="120" class="w-16 bg-slate-700 text-slate-200 text-center py-0.5 px-1 rounded border border-slate-600 text-xs">
+                </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="grid grid-cols-4 gap-2 pt-1">
+                <button class="preset-btn bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded-lg font-medium transition" data-bpm="80">80 BPM</button>
+                <button class="preset-btn bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded-lg font-medium transition" data-bpm="100">100 BPM</button>
+                <button class="preset-btn bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded-lg font-medium transition" data-bpm="120">120 BPM</button>
+                <button class="preset-btn bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded-lg font-medium transition" data-bpm="150">150 BPM</button>
+            </div>
+        </div>
+
+        <!-- Save & Export Settings Section -->
+        <div class="bg-slate-800 rounded-2xl p-4 space-y-3 opacity-50 pointer-events-none transition-opacity" id="exportConfigBox">
+            <span class="text-sm font-medium text-slate-300 block">ตั้งค่าการบันทึกไฟล์ (Save Settings)</span>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <!-- Format Choice -->
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">รูปแบบไฟล์</label>
+                    <select id="formatSelect" class="w-full bg-slate-700 text-slate-200 text-xs py-2 px-2 rounded-xl border border-slate-600 focus:outline-none">
+                        <option value="mp3">MP3 ไฟล์</option>
+                        <option value="wav">WAV ไฟล์</option>
+                    </select>
+                </div>
+
+                <!-- Bitrate Choice (90K - 320K) -->
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">บิตเรต (Bitrate)</label>
+                    <select id="bitrateSelect" class="w-full bg-slate-700 text-slate-200 text-xs py-2 px-2 rounded-xl border border-slate-600 focus:outline-none">
+                        <option value="96">96 K</option>
+                        <option value="128">128 K</option>
+                        <option value="192">192 K</option>
+                        <option value="256">256 K</option>
+                        <option value="320" selected>320 K</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sample Rate Choice (10000 - 48000) -->
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">ความถี่ตัวอย่าง (Sample Rate: 10000 - 48000 Hz)</label>
+                <select id="sampleRateSelect" class="w-full bg-slate-700 text-slate-200 text-xs py-2 px-2 rounded-xl border border-slate-600 focus:outline-none">
+                    <option value="11025">11025 Hz (11 K)</option>
+                    <option value="16000">16000 Hz (16 K)</option>
+                    <option value="22050">22050 Hz (22 K)</option>
+                    <option value="32000">32000 Hz (32 K)</option>
+                    <option value="44100" selected>44100 Hz (44 K)</option>
+                    <option value="48000">48000 Hz (48 K)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Export Action Button -->
+        <button id="exportBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-600/30 transition active:scale-95 opacity-50 pointer-events-none" disabled>
+            บันทึกและดาวน์โหลดไฟล์เสียง
+        </button>
+
+        <!-- Status Message -->
+        <div id="statusMsg" class="text-center text-xs text-slate-400 h-4"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-600 py-2">
+        <span>HEE Audio Engine &copy; 2026</span>
+    </footer>
+
+    <!-- Include lamejs for client-side MP3 encoding -->
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+
+    <script>
+        let audioCtx = null;
+        let audioBuffer = null;
+        let sourceNode = null;
+        let isPlaying = false;
+        let currentPlaybackRate = 1.0;
+
+        const fileInput = document.getElementById('audioFile');
+        const fileNameText = document.getElementById('fileNameText');
+        const controls = document.getElementById('controls');
+        const exportConfigBox = document.getElementById('exportConfigBox');
+        const playBtn = document.getElementById('playBtn');
+        
+        const bpmInput = document.getElementById('bpmInput');
+        const bpmRange = document.getElementById('bpmRange');
+        const baseBpmInput = document.getElementById('baseBpmInput');
+        
+        const formatSelect = document.getElementById('formatSelect');
+        const bitrateSelect = document.getElementById('bitrateSelect');
+        const sampleRateSelect = document.getElementById('sampleRateSelect');
+
+        const exportBtn = document.getElementById('exportBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            initAudioContext();
+            fileNameText.textContent = file.name;
+            statusMsg.textContent = "กำลังโหลดและถอดรหัสไฟล์เสียง...";
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+                controls.classList.remove('opacity-50', 'pointer-events-none');
+                exportConfigBox.classList.remove('opacity-50', 'pointer-events-none');
+                exportBtn.classList.remove('opacity-50', 'pointer-events-none');
+                exportBtn.removeAttribute('disabled');
+                statusMsg.textContent = "พร้อมใช้งาน เลือกปรับความเร็ว BPM และตั้งค่าบันทึกได้เลย";
+            } catch (err) {
+                console.error(err);
+                statusMsg.textContent = "เกิดข้อผิดพลาดในการโหลดไฟล์เสียง";
+            }
+        });
+
+        // Update playback rate based on BPM values (50 - 300)
+        function updateBPM(targetBpm) {
+            const baseBpm = parseFloat(baseBpmInput.value) || 120;
+            targetBpm = Math.max(50, Math.min(300, targetBpm));
+            
+            currentPlaybackRate = targetBpm / baseBpm;
+            
+            // Sync controls
+            bpmInput.value = targetBpm;
+            bpmRange.value = targetBpm;
+
+            if (sourceNode) {
+                sourceNode.playbackRate.setValueAtTime(currentPlaybackRate, audioCtx.currentTime);
+            }
+        }
+
+        bpmInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val)) {
+                updateBPM(val);
+            }
+        });
+
+        bpmRange.addEventListener('input', (e) => {
+            updateBPM(parseFloat(e.target.value));
+        });
+
+        baseBpmInput.addEventListener('input', () => {
+            updateBPM(parseFloat(bpmInput.value));
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const bpmVal = parseFloat(btn.getAttribute('data-bpm'));
+                updateBPM(bpmVal);
+            });
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (!audioBuffer) return;
+
+            if (isPlaying) {
+                stopAudio();
+                playBtn.textContent = "▶ เล่น / พัก";
+            } else {
+                playAudio();
+                playBtn.textContent = "⏸ หยุดเล่น";
+            }
+        });
+
+        function playAudio() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+            }
+
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.playbackRate.setValueAtTime(currentPlaybackRate, audioCtx.currentTime);
+            sourceNode.connect(audioCtx.destination);
+            sourceNode.start(0);
+            isPlaying = true;
+
+            sourceNode.onended = () => {
+                isPlaying = false;
+                playBtn.textContent = "▶ เล่น / พัก";
+            };
+        }
+
+        function stopAudio() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+                sourceNode = null;
+            }
+            isPlaying = false;
+        }
+
+        exportBtn.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+            if (isPlaying) stopAudio();
+
+            const selectedFormat = formatSelect.value;
+            const selectedBitrate = parseInt(bitrateSelect.value);
+            const targetSampleRate = parseInt(sampleRateSelect.value);
+
+            exportBtn.textContent = "กำลังประมวลผลการบันทึก...";
+            exportBtn.classList.add('opacity-50', 'pointer-events-none');
+            statusMsg.textContent = `กำลังเรนเดอร์ไฟล์เสียง (${selectedFormat.toUpperCase()}, ${selectedBitrate}K, ${targetSampleRate}Hz)...`;
+
+            try {
+                const offlineCtx = new OfflineAudioContext(
+                    audioBuffer.numberOfChannels,
+                    Math.floor(audioBuffer.length / currentPlaybackRate),
+                    targetSampleRate
+                );
+
+                const offlineSource = offlineCtx.createBufferSource();
+                offlineSource.buffer = audioBuffer;
+                offlineSource.playbackRate.setValueAtTime(currentPlaybackRate, 0);
+                offlineSource.connect(offlineCtx.destination);
+                offlineSource.start(0);
+
+                const renderedBuffer = await offlineCtx.startRendering();
+                
+                let blob, extension;
+                if (selectedFormat === 'mp3') {
+                    blob = bufferToMp3(renderedBuffer, selectedBitrate);
+                    extension = 'mp3';
+                } else {
+                    blob = bufferToWave(renderedBuffer, renderedBuffer.length);
+                    extension = 'wav';
+                }
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `HEE_Audio_${bpmInput.value}bpm.${extension}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                statusMsg.textContent = "บันทึกและดาวน์โหลดไฟล์สำเร็จเรียบร้อย!";
+            } catch (err) {
+                console.error(err);
+                statusMsg.textContent = "เกิดข้อผิดพลาดในการบันทึกไฟล์";
+            } finally {
+                exportBtn.textContent = "บันทึกและดาวน์โหลดไฟล์เสียง";
+                exportBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        });
+
+        // Helper: Convert AudioBuffer to WAV Blob
+        function bufferToWave(abBuffer, len) {
+            const numOfChan = abBuffer.numberOfChannels;
+            const length = len * numOfChan * 2 + 44;
+            const buffer = new ArrayBuffer(length);
+            const view = new DataView(buffer);
+            let channels = [], i, sample, offset = 0, pos = 0;
+
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); 
+            setUint32(0x45564157); // "WAVE"
+
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16);         
+            setUint32(1);          // PCM
+            setUint16(numOfChan);
+            setUint32(abBuffer.sampleRate);
+            setUint32(abBuffer.sampleRate * 2 * numOfChan); 
+            setUint16(numOfChan * 2); 
+            setUint16(16);         
+
+            setUint32(0x61746164); // "data"
+            setUint32(length - pos - 4); 
+
+            for (i = 0; i < numOfChan; i++) {
+                channels.push(abBuffer.getChannelData(i));
+            }
+
+            while (pos < length) {
+                for (i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767);
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([buffer], { type: "audio/wav" });
+        }
+
+        // Helper: Convert AudioBuffer to MP3 Blob using lamejs
+        function bufferToMp3(abBuffer, kbps) {
+            const channels = abBuffer.numberOfChannels;
+            const sampleRate = abBuffer.sampleRate;
+            const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+            let mp3Data = [];
+
+            const sampleBlockSize = 1152;
+            const left = abBuffer.getChannelData(0);
+            const right = channels > 1 ? abBuffer.getChannelData(1) : left;
+
+            const left16 = convertFloat32ToInt16(left);
+            const right16 = convertFloat32ToInt16(right);
+
+            for (let i = 0; i < left16.length; i += sampleBlockSize) {
+                const chunkLeft = left16.subarray(i, i + sampleBlockSize);
+                const chunkRight = right16.subarray(i, i + sampleBlockSize);
+                
+                let mp3buf;
+                if (channels === 1) {
+                    mp3buf = mp3encoder.encodeBuffer(chunkLeft);
+                } else {
+                    mp3buf = mp3encoder.encodeBuffer(chunkLeft, chunkRight);
+                }
+                if (mp3buf.length > 0) {
+                    mp3Data.push(mp3buf);
+                }
+            }
+
+            const mp3buf = mp3encoder.flush();
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+            }
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        function convertFloat32ToInt16(buffer) {
+            let l = buffer.length;
+            let buf = new Int16Array(l);
+            for (let i = 0; i < l; i++) {
+                let s = Math.max(-1, Math.min(1, buffer[i]));
+                buf[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            return buf;
+        }
+    </script>
+</body>
+</html>
