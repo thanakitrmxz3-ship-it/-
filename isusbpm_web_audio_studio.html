@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>isusbpm - Audio BPM Master & Format Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        neon: {
+                            pink: '#ec4899',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- lamejs for client-side MP3 encoding -->
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Prompt', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(ellipse at 50% 0%, #1e1b4b 0%, #0b0f19 50%, #030712 100%);
+            min-height: 100vh;
+        }
+        .font-mono-num {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 0 14px rgba(99, 102, 241, 0.8), 0 0 4px rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 1), 0 0 8px #ffffff;
+        }
+        .glow-border {
+            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+        }
+        .dj-pulse {
+            animation: pulseGlow 2.5s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+            100% { box-shadow: 0 0 35px rgba(236, 72, 153, 0.4); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased flex flex-col justify-between py-6 px-4 selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-2xl w-full mx-auto flex-1 flex flex-col space-y-6">
+        
+        <!-- App Header with Hero DJ Banner -->
+        <header class="text-center space-y-3 pt-2">
+            <!-- Top brand tag -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold shadow-inner">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <i data-lucide="disc-3" class="w-3.5 h-3.5 text-indigo-400 animate-spin" style="animation-duration: 8s;"></i>
+                <span class="font-mono-num tracking-wider">ISUSBPM AUDIO ENGINE v2.5 TURBO</span>
+            </div>
+
+            <!-- Main Title based on filename 'isusbpm' -->
+            <div class="space-y-1">
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-pink-400 bg-clip-text text-transparent font-mono-num uppercase">
+                    isusbpm.com
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                    โปรแกรมปรับความเร็วเพลง BPM & แปลงรูปแบบไฟล์เสียงแบบเรียลไทม์ ทำงานตรงในเบราว์เซอร์ 100% ปลอดภัย ไม่ต้องอัปโหลดขึ้นเซิร์ฟเวอร์
+                </p>
+            </div>
+
+            <!-- DJ Visual Card (Incorporating user image) -->
+            <div class="relative overflow-hidden rounded-2xl border border-indigo-500/30 dj-pulse bg-slate-900/80 shadow-2xl mx-auto max-w-xl group">
+                <div class="h-44 sm:h-52 w-full relative overflow-hidden">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmC7NTP1-ys2WwnZPL1icBy8W-gmX7RCher-iB68HlHpOXDBw7lt7B6jx7iz55eR63xeY9VfiaXfXew_A_Dq4LDMiOTvJJnPMhc-w6W-coZfN5i4IX3LJbP-GbvTkj_5BfzPv6VYetwPffqqAIFSJBcfo2OgQ_07mjecbWLVtWD8dgkaEMNv9U9TzMN7ORri5N4apinZ5Y2Weka5-KOhvOhqGbtm7BYp4K3FCw23uyUpQMV9CSnK4prypSTDL94saLpA" alt="isusbpm DJ Studio" class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-90 contrast-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                    
+                    <!-- Overlay Badge -->
+                    <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-left">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-pink-400 tracking-wide uppercase">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span>Live DJ Studio Session</span>
+                            </div>
+                            <h2 class="text-base sm:text-lg font-bold text-white drop-shadow">isusbpm Deck Control Master</h2>
+                        </div>
+                        <div class="hidden sm:flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] font-mono-num text-emerald-400">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 animate-pulse"></i>
+                            <span>AUDIO_READY</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="space-y-5 flex-1">
+            
+            <!-- File Upload Area -->
+            <div id="dropZone" class="group border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 bg-slate-900/60 hover:bg-indigo-950/20 backdrop-blur-xl rounded-2xl p-6 text-center relative transition-all duration-300 cursor-pointer glow-border">
+                <input type="file" id="audioFileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                
+                <div id="uploadPrompt" class="flex flex-col items-center space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/30 to-pink-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 group-hover:scale-110 group-hover:text-white transition-all duration-300 shadow-lg shadow-indigo-600/20">
+                        <i data-lucide="upload-cloud" class="w-7 h-7"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-sm sm:text-base font-semibold text-slate-200 group-hover:text-indigo-200 transition-colors" id="fileNameLabel">
+                            คลิกเพื่อเลือกไฟล์เสียง หรือลากไฟล์เพลงมาวางที่นี่
+                        </p>
+                        <p class="text-xs text-slate-400">รองรับไฟล์เสียงสากล: MP3, WAV, AAC, OGG, FLAC, M4A</p>
+                    </div>
+                    <div id="fileInfoBadge" class="hidden items-center gap-2 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-3.5 py-1.5 rounded-full mt-1 font-mono-num">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span id="fileDetailsText">พร้อมประมวลผล</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Visualizer & Playback Card -->
+            <div id="playerSection" class="bg-slate-900/80 border border-slate-800 backdrop-blur-xl rounded-2xl p-5 sm:p-6 space-y-5 shadow-2xl transition-all duration-300 opacity-50 pointer-events-none">
+                
+                <!-- Playback Control Bar -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button id="playBtn" class="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 hover:from-indigo-500 hover:to-indigo-400 active:scale-95 text-white font-semibold px-5 py-3 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-indigo-600/40 min-w-[140px]">
+                            <i data-lucide="play" id="playIcon" class="w-4 h-4 fill-current"></i>
+                            <span id="playText">ฟังตัวอย่าง</span>
+                        </button>
+                        <button id="resetPitchBtn" class="p-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 text-xs transition active:scale-95" title="รีเซ็ตความเร็วกลับสู่ปกติ">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-slate-950/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                        <div class="text-right">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Playback Rate</span>
+                            <div class="flex items-baseline justify-end gap-1">
+                                <span id="playbackRateDisplay" class="font-mono-num text-xl font-black text-indigo-400">1.00</span>
+                                <span class="text-xs text-indigo-300/70 font-mono-num font-bold">x</span>
+                            </div>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Pitch Change</span>
+                            <span id="pitchDisplay" class="font-mono-num text-xs font-bold text-slate-300">0.0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Animated Waveform Simulation -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-[11px] text-slate-400 font-mono-num">
+                        <span class="flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-3 h-3 text-indigo-400"></i> REALTIME SPECTRUM</span>
+                        <span id="timeDisplay">0:00 / 0:00</span>
+                    </div>
+                    <div id="waveformContainer" class="h-14 bg-slate-950/90 rounded-xl p-2.5 flex items-center justify-between gap-1 overflow-hidden border border-indigo-950/80 shadow-inner">
+                        <!-- 36 bars generated dynamically or static in HTML -->
+                        <div class="waveform-bar h-3 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-5 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-8 w-1 bg-indigo-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-6 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-10 w-1 bg-indigo-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-7 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-4 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-9 w-1 bg-pink-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-12 w-1 bg-pink-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-8 w-1 bg-indigo-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-5 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-11 w-1 bg-indigo-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-7 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-4 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-9 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-12 w-1 bg-indigo-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-6 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-10 w-1 bg-indigo-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-4 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-7 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-11 w-1 bg-indigo-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-5 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-9 w-1 bg-pink-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-12 w-1 bg-pink-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-8 w-1 bg-indigo-500/60 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-4 w-1 bg-indigo-500/40 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-10 w-1 bg-indigo-400 rounded-full transition-all duration-75"></div>
+                        <div class="waveform-bar h-6 w-1 bg-indigo-500/50 rounded-full transition-all duration-75"></div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-800/80"></div>
+
+                <!-- BPM Settings Control Section -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <label for="bpmNumberInput" class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4 text-indigo-400"></i>
+                                ความเร็วเป้าหมาย (Target BPM)
+                            </label>
+                            <span class="text-[11px] text-slate-400">ช่วงที่รองรับ: 40 - 320 BPM</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-indigo-500/40 shadow-inner focus-within:border-indigo-400">
+                            <input type="number" id="bpmNumberInput" min="40" max="320" value="128" class="w-16 bg-transparent text-indigo-300 font-mono-num font-black text-center text-base outline-none">
+                            <span class="text-xs text-slate-400 font-bold font-mono-num">BPM</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider with markers -->
+                    <div class="space-y-2">
+                        <input type="range" id="bpmSlider" min="40" max="320" step="1" value="128" class="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-[11px] font-mono-num text-slate-500 px-1">
+                            <span>40 BPM (Chill)</span>
+                            <span class="text-indigo-400 font-semibold">120 (Standard)</span>
+                            <span class="text-pink-400 font-semibold">128 (EDM)</span>
+                            <span class="text-amber-400 font-semibold">150 (Hard)</span>
+                            <span>320 BPM (Speedcore)</span>
+                        </div>
+                    </div>
+
+                    <!-- Original BPM Calibration Input -->
+                    <div class="flex items-center justify-between text-xs bg-slate-950/70 p-3 rounded-xl border border-slate-800/90">
+                        <div class="flex items-center gap-2 text-slate-300">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-400"></i>
+                            <div>
+                                <span class="font-medium block">BPM ต้นฉบับ (Original Track BPM):</span>
+                                <span class="text-[10px] text-slate-500">หากทราบค่า BPM ของเพลงเดิม ระบุเพื่อคำนวณสปีดที่แม่นยำ</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number" id="baseBpmInput" min="40" max="320" value="128" class="w-16 bg-slate-800 text-slate-100 font-mono-num font-bold text-center py-1.5 px-2 rounded-lg border border-slate-700 text-xs outline-none focus:border-indigo-500">
+                            <span class="text-[11px] text-slate-500 font-mono-num font-bold">BPM</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Preset Buttons -->
+                    <div class="space-y-2">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ปุ่มลัดสปีดยอดนิยม (DJ Quick Presets):</span>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="85">85 Lo-Fi</button>
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="100">100 R&B</button>
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="120">120 House</button>
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="128">128 Club</button>
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="140">140 Trap</button>
+                            <button class="preset-btn bg-slate-800/90 hover:bg-indigo-600 hover:text-white border border-slate-700/80 text-slate-300 text-xs py-2 rounded-xl font-mono-num font-bold transition-all active:scale-95 shadow" data-bpm="150">150 Hard</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export & Output Configuration Card -->
+            <div id="exportSection" class="bg-slate-900/80 border border-slate-800 backdrop-blur-xl rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl transition-all duration-300 opacity-50 pointer-events-none">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="settings-2" class="w-4 h-4 text-emerald-400"></i>
+                    <h3 class="text-sm font-bold text-slate-200">ตั้งค่าการ Export และแปลงไฟล์เสียง</h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs text-slate-400 block font-medium">รูปแบบไฟล์เป้าหมาย (Audio Format)</label>
+                        <select id="formatSelect" class="w-full bg-slate-950 text-slate-200 text-xs py-3 px-3.5 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 cursor-pointer font-mono-num font-medium">
+                            <option value="mp3">MP3 (Compressed - เหมาะสำหรับทั่วไป & DJ)</option>
+                            <option value="wav">WAV (Lossless 16-bit PCM - สตูดิโอมาสเตอร์)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5" id="bitrateContainer">
+                        <label class="text-xs text-slate-400 block font-medium">คุณภาพบิตเรต (Bitrate)</label>
+                        <select id="bitrateSelect" class="w-full bg-slate-950 text-slate-200 text-xs py-3 px-3.5 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 cursor-pointer font-mono-num font-medium">
+                            <option value="128">128 kbps (ขนาดไฟล์เบา)</option>
+                            <option value="192">192 kbps (สตรีมมิ่งคุณภาพดี)</option>
+                            <option value="256">256 kbps (คุณภาพสูงมาก)</option>
+                            <option value="320" selected>320 kbps (สูงสุด Ultra HQ)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs text-slate-400 block font-medium">Sample Rate (อัตราการสุ่มตัวอย่าง)</label>
+                    <select id="sampleRateSelect" class="w-full bg-slate-950 text-slate-200 text-xs py-3 px-3.5 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 cursor-pointer font-mono-num font-medium">
+                        <option value="44100" selected>44,100 Hz (CD Audio Standard - แนะนำ)</option>
+                        <option value="48000">48,000 Hz (Pro Studio / Cinema Standard)</option>
+                        <option value="32000">32,000 Hz (Broadcast)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Download & Processing Action -->
+            <div class="space-y-3 pt-2">
+                <button id="exportActionBtn" disabled class="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 active:scale-[0.99] text-white font-bold py-4 px-6 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all duration-200 opacity-50 cursor-not-allowed">
+                    <i data-lucide="download" id="downloadIcon" class="w-5 h-5"></i>
+                    <span id="exportBtnText" class="text-sm sm:text-base">ประมวลผลและดาวน์โหลดไฟล์เพลงใหม่ (isusbpm Export)</span>
+                </button>
+
+                <!-- Processing Bar -->
+                <div id="progressContainer" class="hidden space-y-1.5 pt-1">
+                    <div class="flex justify-between items-center text-xs font-mono-num text-slate-300 px-1">
+                        <span id="progressText" class="flex items-center gap-1.5">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i>
+                            <span>กำลังประมวลผลไฟล์...</span>
+                        </span>
+                        <span id="progressPercent" class="text-emerald-400 font-bold text-sm">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+                        <div id="progressBar" class="bg-gradient-to-r from-indigo-500 via-teal-400 to-emerald-400 h-full w-0 transition-all duration-150 rounded-full shadow-lg shadow-emerald-500/50"></div>
+                    </div>
+                </div>
+
+                <!-- Status Feedback Message -->
+                <div id="statusMessageBox" class="flex items-center justify-center gap-2 text-xs text-slate-400 min-h-[22px] transition-all text-center">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <span id="statusText">เลือกไฟล์เพลงเพื่อเริ่มต้นปรับแต่ง BPM และดาวน์โหลด</span>
+                </div>
+            </div>
+
+            <!-- Features Highlights Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                <div class="bg-slate-900/40 border border-slate-800/80 p-3.5 rounded-xl flex items-start gap-3">
+                    <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200">Zero Server Upload</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">ประมวลผลบนเครื่องของคุณผ่าน Web Audio API 100%</p>
+                    </div>
+                </div>
+                <div class="bg-slate-900/40 border border-slate-800/80 p-3.5 rounded-xl flex items-start gap-3">
+                    <div class="p-2 bg-pink-500/10 rounded-lg text-pink-400">
+                        <i data-lucide="sliders" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200">DJ Scratch & Preview</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">ทดลองฟังเสียงสปีดใหม่แบบเรียลไทม์ทันทีก่อนบันทึก</p>
+                    </div>
+                </div>
+                <div class="bg-slate-900/40 border border-slate-800/80 p-3.5 rounded-xl flex items-start gap-3">
+                    <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                        <i data-lucide="file-audio" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200">High Quality 320k</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">ส่งออกเป็น MP3 สูงสุด 320 kbps หรือ WAV Lossless 16-bit</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-slate-500 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-300 font-mono-num">isusbpm</span>
+                <span>© 2026 Audio Production Engine</span>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] text-slate-400">
+                <span class="inline-flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3 text-indigo-400"></i> Turbo Audio Thread</span>
+                <span>•</span>
+                <span>Pure HTML5 & LameJS</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let audioCtx = null;
+        let audioBuffer = null;
+        let sourceNode = null;
+        let isPlaying = false;
+        let currentPlaybackRate = 1.0;
+        let originalFileName = "isusbpm_track";
+        let startTime = 0;
+        let pausedAt = 0;
+
+        const audioFileInput = document.getElementById('audioFileInput');
+        const fileNameLabel = document.getElementById('fileNameLabel');
+        const fileInfoBadge = document.getElementById('fileInfoBadge');
+        const fileDetailsText = document.getElementById('fileDetailsText');
+        const playerSection = document.getElementById('playerSection');
+        const exportSection = document.getElementById('exportSection');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const resetPitchBtn = document.getElementById('resetPitchBtn');
+        const playbackRateDisplay = document.getElementById('playbackRateDisplay');
+        const pitchDisplay = document.getElementById('pitchDisplay');
+        const waveformBars = document.querySelectorAll('.waveform-bar');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        const bpmNumberInput = document.getElementById('bpmNumberInput');
+        const bpmSlider = document.getElementById('bpmSlider');
+        const baseBpmInput = document.getElementById('baseBpmInput');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+
+        const formatSelect = document.getElementById('formatSelect');
+        const bitrateContainer = document.getElementById('bitrateContainer');
+        const bitrateSelect = document.getElementById('bitrateSelect');
+        const sampleRateSelect = document.getElementById('sampleRateSelect');
+
+        const exportActionBtn = document.getElementById('exportActionBtn');
+        const exportBtnText = document.getElementById('exportBtnText');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressText = document.getElementById('progressText');
+        const statusText = document.getElementById('statusText');
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        formatSelect.addEventListener('change', () => {
+            if (formatSelect.value === 'wav') {
+                bitrateContainer.classList.add('opacity-30', 'pointer-events-none');
+            } else {
+                bitrateContainer.classList.remove('opacity-30', 'pointer-events-none');
+            }
+        });
+
+        // Handle Audio Upload
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            initAudioContext();
+            originalFileName = file.name.replace(/\.[^/.]+$/, "");
+            fileNameLabel.textContent = file.name;
+            statusText.textContent = "กำลังถอดรหัสและวิเคราะห์ไฟล์เสียง...";
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+                playerSection.classList.remove('opacity-50', 'pointer-events-none');
+                exportSection.classList.remove('opacity-50', 'pointer-events-none');
+                exportActionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                exportActionBtn.removeAttribute('disabled');
+
+                fileInfoBadge.classList.remove('hidden');
+                fileInfoBadge.classList.add('inline-flex');
+                
+                const duration = Math.round(audioBuffer.duration);
+                const mins = Math.floor(duration / 60);
+                const secs = duration % 60;
+                fileDetailsText.textContent = `${audioBuffer.numberOfChannels} Ch | ${audioBuffer.sampleRate} Hz | ความยาว ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+                timeDisplay.textContent = `0:00 / ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                statusText.textContent = "ไฟล์พร้อมใช้งาน! ปรับ BPM และกดดาวน์โหลดไฟล์ได้ทันที";
+                updateBPM(parseFloat(bpmNumberInput.value));
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "ไม่สามารถถอดรหัสไฟล์เสียงนี้ได้ โปรดลองไฟล์ MP3 หรือ WAV อื่น";
+            }
+        });
+
+        function updateBPM(targetBpm) {
+            const baseBpm = parseFloat(baseBpmInput.value) || 128;
+            targetBpm = Math.max(40, Math.min(320, targetBpm));
+            
+            currentPlaybackRate = targetBpm / baseBpm;
+            
+            bpmNumberInput.value = targetBpm;
+            bpmSlider.value = targetBpm;
+            playbackRateDisplay.textContent = currentPlaybackRate.toFixed(2);
+
+            const pitchShiftPct = ((currentPlaybackRate - 1) * 100).toFixed(1);
+            pitchDisplay.textContent = `${pitchShiftPct > 0 ? '+' : ''}${pitchShiftPct}%`;
+
+            if (sourceNode && isPlaying) {
+                sourceNode.playbackRate.setValueAtTime(currentPlaybackRate, audioCtx.currentTime);
+            }
+        }
+
+        bpmNumberInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val)) updateBPM(val);
+        });
+
+        bpmSlider.addEventListener('input', (e) => {
+            updateBPM(parseFloat(e.target.value));
+        });
+
+        baseBpmInput.addEventListener('input', () => {
+            updateBPM(parseFloat(bpmNumberInput.value));
+        });
+
+        resetPitchBtn.addEventListener('click', () => {
+            const base = parseFloat(baseBpmInput.value) || 128;
+            updateBPM(base);
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const bpmVal = parseFloat(btn.getAttribute('data-bpm'));
+                updateBPM(bpmVal);
+            });
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (!audioBuffer) return;
+            if (isPlaying) {
+                stopAudio();
+            } else {
+                playAudio();
+            }
+        });
+
+        let waveformInterval = null;
+
+        function startWaveformAnimation() {
+            if (waveformInterval) clearInterval(waveformInterval);
+            waveformInterval = setInterval(() => {
+                waveformBars.forEach(bar => {
+                    const speedMultiplier = Math.min(2, Math.max(0.5, currentPlaybackRate));
+                    const randomH = Math.floor((Math.random() * 36 + 6) * (speedMultiplier * 0.9));
+                    bar.style.height = `${Math.min(48, randomH)}px`;
+                });
+            }, Math.max(40, Math.floor(90 / currentPlaybackRate)));
+        }
+
+        function stopWaveformAnimation() {
+            if (waveformInterval) clearInterval(waveformInterval);
+            waveformBars.forEach((bar, idx) => {
+                bar.style.height = `${(idx % 5 + 1) * 6}px`;
+            });
+        }
+
+        function playAudio() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+            }
+
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.playbackRate.setValueAtTime(currentPlaybackRate, audioCtx.currentTime);
+            sourceNode.connect(audioCtx.destination);
+            sourceNode.start(0);
+            isPlaying = true;
+
+            playText.textContent = "หยุดชั่วคราว";
+            playBtn.classList.replace('from-indigo-600', 'from-amber-600');
+            playBtn.classList.replace('via-indigo-500', 'via-amber-500');
+            playBtn.classList.replace('to-indigo-600', 'to-amber-600');
+            playBtn.classList.replace('shadow-indigo-600/40', 'shadow-amber-600/40');
+            startWaveformAnimation();
+
+            sourceNode.onended = () => {
+                isPlaying = false;
+                resetPlayButton();
+            };
+        }
+
+        function stopAudio() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+                sourceNode = null;
+            }
+            isPlaying = false;
+            resetPlayButton();
+        }
+
+        function resetPlayButton() {
+            playText.textContent = "ฟังตัวอย่าง";
+            playBtn.classList.replace('from-amber-600', 'from-indigo-600');
+            playBtn.classList.replace('via-amber-500', 'via-indigo-500');
+            playBtn.classList.replace('to-amber-600', 'to-indigo-600');
+            playBtn.classList.replace('shadow-amber-600/40', 'shadow-indigo-600/40');
+            stopWaveformAnimation();
+        }
+
+        // Optimized Export & Auto Download
+        exportActionBtn.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+            if (isPlaying) stopAudio();
+
+            const selectedFormat = formatSelect.value;
+            const selectedBitrate = parseInt(bitrateSelect.value);
+            const targetSampleRate = parseInt(sampleRateSelect.value);
+
+            exportActionBtn.setAttribute('disabled', 'true');
+            exportActionBtn.classList.add('opacity-50', 'cursor-wait');
+            exportBtnText.textContent = "กำลังประมวลผลเสียง...";
+            progressContainer.classList.remove('hidden');
+            
+            updateProgress(0, "เริ่มการสังเคราะห์และเร่งสปีดสัญญาณ...");
+
+            try {
+                const totalSamples = Math.floor(audioBuffer.length / currentPlaybackRate);
+                const offlineCtx = new OfflineAudioContext(
+                    audioBuffer.numberOfChannels,
+                    totalSamples,
+                    targetSampleRate
+                );
+
+                const offlineSource = offlineCtx.createBufferSource();
+                offlineSource.buffer = audioBuffer;
+                offlineSource.playbackRate.setValueAtTime(currentPlaybackRate, 0);
+                offlineSource.connect(offlineCtx.destination);
+                offlineSource.start(0);
+
+                updateProgress(15, "กำลังเรนเดอร์ Audio Buffer...");
+
+                const renderedBuffer = await offlineCtx.startRendering();
+
+                let blob, extension;
+                if (selectedFormat === 'mp3') {
+                    blob = await bufferToMp3Async(renderedBuffer, selectedBitrate, (percent) => {
+                        const totalPct = Math.floor(20 + percent * 80);
+                        updateProgress(totalPct, `กำลังบีบอัด MP3 ${selectedBitrate}kbps (${totalPct}%)...`);
+                    });
+                    extension = 'mp3';
+                } else {
+                    blob = await bufferToWaveAsync(renderedBuffer, renderedBuffer.length, (percent) => {
+                        const totalPct = Math.floor(20 + percent * 80);
+                        updateProgress(totalPct, `กำลังเขียนโครงสร้าง WAV 16-bit (${totalPct}%)...`);
+                    });
+                    extension = 'wav';
+                }
+
+                updateProgress(100, "ประมวลผลเสร็จสิ้น 100%! กำลังเริ่มดาวน์โหลดไฟล์...");
+
+                // Automatic Trigger Download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `isusbpm_${originalFileName}_${bpmNumberInput.value}BPM.${extension}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                setTimeout(() => URL.revokeObjectURL(url), 12000);
+
+                statusText.textContent = `ดาวน์โหลด isusbpm_${originalFileName}_${bpmNumberInput.value}BPM.${extension} เรียบร้อยแล้ว!`;
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "เกิดข้อผิดพลาดขณะประมวลผลไฟล์เสียง";
+            } finally {
+                setTimeout(() => {
+                    exportActionBtn.removeAttribute('disabled');
+                    exportActionBtn.classList.remove('opacity-50', 'cursor-wait');
+                    exportBtnText.textContent = "ประมวลผลและดาวน์โหลดไฟล์เพลงใหม่ (isusbpm Export)";
+                    progressContainer.classList.add('hidden');
+                    updateProgress(0, "");
+                }, 2500);
+            }
+        });
+
+        function updateProgress(percent, text) {
+            const clamped = Math.min(100, Math.max(0, percent));
+            progressBar.style.width = `${clamped}%`;
+            progressPercent.textContent = `${clamped}%`;
+            if (text) {
+                progressText.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i><span>${text}</span>`;
+                statusText.textContent = text;
+                lucide.createIcons();
+            }
+        }
+
+        // Async Non-blocking MP3 Encoder with LameJS
+        async function bufferToMp3Async(abBuffer, kbps, onProgress) {
+            const channels = abBuffer.numberOfChannels;
+            const sampleRate = abBuffer.sampleRate;
+            const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+            const mp3Data = [];
+            const sampleBlockSize = 1152;
+
+            const left = abBuffer.getChannelData(0);
+            const right = channels > 1 ? abBuffer.getChannelData(1) : left;
+
+            const left16 = convertFloat32ToInt16(left);
+            const right16 = convertFloat32ToInt16(right);
+
+            const totalBlocks = Math.ceil(left16.length / sampleBlockSize);
+            let processed = 0;
+
+            for (let i = 0; i < left16.length; i += sampleBlockSize) {
+                const chunkLeft = left16.subarray(i, i + sampleBlockSize);
+                const chunkRight = right16.subarray(i, i + sampleBlockSize);
+                
+                let mp3buf;
+                if (channels === 1) {
+                    mp3buf = mp3encoder.encodeBuffer(chunkLeft);
+                } else {
+                    mp3buf = mp3encoder.encodeBuffer(chunkLeft, chunkRight);
+                }
+                if (mp3buf.length > 0) {
+                    mp3Data.push(mp3buf);
+                }
+                
+                processed++;
+                if (processed % 40 === 0) {
+                    if (onProgress) onProgress(processed / totalBlocks);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
+
+            const mp3buf = mp3encoder.flush();
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+            }
+
+            if (onProgress) onProgress(1.0);
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        // Async Non-blocking WAV Encoder
+        async function bufferToWaveAsync(abBuffer, len, onProgress) {
+            const numOfChan = abBuffer.numberOfChannels;
+            const length = len * numOfChan * 2 + 44;
+            const buffer = new ArrayBuffer(length);
+            const view = new DataView(buffer);
+            let pos = 0;
+
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); 
+            setUint32(0x45564157); // "WAVE"
+
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16);         
+            setUint32(1);          // PCM
+            setUint16(numOfChan);
+            setUint32(abBuffer.sampleRate);
+            setUint32(abBuffer.sampleRate * 2 * numOfChan); 
+            setUint16(numOfChan * 2); 
+            setUint16(16);         
+
+            setUint32(0x61746164); // "data"
+            setUint32(length - pos - 4); 
+
+            const channels = [];
+            for (let i = 0; i < numOfChan; i++) {
+                channels.push(abBuffer.getChannelData(i));
+            }
+
+            const chunkSize = 25000;
+            for (let offset = 0; offset < len; offset += chunkSize) {
+                const end = Math.min(offset + chunkSize, len);
+                for (let i = offset; i < end; i++) {
+                    for (let ch = 0; ch < numOfChan; ch++) {
+                        let sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                        sample = (sample < 0 ? sample * 32768 : sample * 32767);
+                        view.setInt16(pos, sample, true);
+                        pos += 2;
+                    }
+                }
+                if (onProgress) onProgress(end / len);
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            return new Blob([buffer], { type: "audio/wav" });
+        }
+
+        function convertFloat32ToInt16(buffer) {
+            const len = buffer.length;
+            const res = new Int16Array(len);
+            for (let i = 0; i < len; i++) {
+                let s = Math.max(-1, Math.min(1, buffer[i]));
+                res[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            return res;
+        }
+    </script>
+</body>
+</html>
